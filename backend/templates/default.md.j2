@@ -1,0 +1,76 @@
+# Network Device Documentation
+
+## Device Information
+- **Device Name**: {{ device_info.name }}
+- **IP Address**: {{ device_info.ip }}
+- **Device Type**: {{ device_info.device_type }}
+- **Documentation Generated**: {{ generation_time }}
+
+---
+
+{% if parsed_data %}
+{% for command, data in parsed_data.items() %}
+## Command: `{{ command }}`
+
+{% if data.parsed %}
+{% if command == "show version" %}
+### System Information
+{% if data.parsed.software_version %}
+- **Software Version**: {{ data.parsed.software_version }}
+{% endif %}
+{% if data.parsed.hardware_model %}
+- **Hardware Model**: {{ data.parsed.hardware_model }}
+{% endif %}
+{% if data.parsed.serial_number %}
+- **Serial Number**: {{ data.parsed.serial_number }}
+{% endif %}
+{% if data.parsed.system_mac %}
+- **System MAC**: {{ data.parsed.system_mac }}
+{% endif %}
+{% if data.parsed.uptime %}
+- **Uptime**: {{ data.parsed.uptime }}
+{% endif %}
+{% if data.parsed.hostname %}
+- **Hostname**: {{ data.parsed.hostname }}
+{% endif %}
+
+{% elif command == "show ip interface brief" %}
+### Interface Summary
+| Interface | IP Address | Status | Protocol |
+|-----------|------------|--------|----------|
+{% for interface in data.parsed %}
+| {{ interface.interface }} | {{ interface.ip_address or "unassigned" }} | {{ interface.status }} | {{ interface.protocol }} |
+{% endfor %}
+
+{% elif command == "show interfaces status" %}
+### Interface Status
+| Port | Name | Status | VLAN | Duplex | Speed | Type |
+|------|------|--------|------|--------|-------|------|
+{% for interface in data.parsed %}
+| {{ interface.port }} | {{ interface.name }} | {{ interface.status }} | {{ interface.vlan }} | {{ interface.duplex }} | {{ interface.speed }} | {{ interface.type }} |
+{% endfor %}
+
+{% else %}
+### Parsed Output
+```json
+{{ data.parsed | tojson(indent=2) }}
+```
+{% endif %}
+
+{% else %}
+### Raw Output
+```
+{{ data.raw }}
+```
+{% endif %}
+
+---
+{% endfor %}
+{% else %}
+*No command output data available*
+{% endif %}
+
+## Notes
+- This documentation was automatically generated from CLI command outputs
+- Parsed data is formatted when possible, otherwise raw output is shown
+- Generated on {{ generation_time }}
