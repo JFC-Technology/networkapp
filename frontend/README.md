@@ -1,8 +1,34 @@
-# Getting Started with Create React App
+# Network Documentation Generator - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is the frontend for the Network Documentation Generator application, built with React and Create React App.
 
-## Available Scripts
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v16 or later)
+- npm (v8 or later) or Yarn
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/JFC-Technology/networkapp.git
+   cd networkapp/frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn
+   ```
+
+3. Create a `.env` file in the frontend directory with the following content:
+   ```env
+   REACT_APP_BACKEND_URL=http://localhost:8001
+   ```
+
+## 🛠 Available Scripts
 
 In the project directory, you can run:
 
@@ -61,10 +87,40 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/m
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
-### Deployment
+## 🚀 Development
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Running the Development Server
 
-### `npm run build` fails to minify
+```bash
+npm start
+# or
+yarn start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+
+### Building for Production
+
+```bash
+npm run build
+# or
+yarn build
+```
+
+Builds the app for production to the `build` folder.
+
+## 🐳 Docker Deployment
+
+For containerized deployment, refer to the main [deployment guide](../deployment_package/DEPLOYMENT.md).
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
