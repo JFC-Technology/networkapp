@@ -3,11 +3,11 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
-RUN npm install
+COPY ../../frontend/package*.json .
+RUN npm install --legacy-peer-deps
 
 # Copy application code
-COPY . .
+COPY ../../frontend .
 
 # Expose port
 EXPOSE 3000
