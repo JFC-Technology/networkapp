@@ -13,7 +13,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Terminal,
-  Router
+  Router,
+  Globe,
+  Search,
+  Loader2,
+  MessageCircle,
+  Wand2
 } from 'lucide-react';
 import axios from 'axios';
 import { API } from '../App';
@@ -30,6 +35,12 @@ function Dashboard() {
     successRate: 0
   });
   const [loading, setLoading] = useState(true);
+  const [cidr, setCidr] = useState('192.168.1.0/24');
+  const [discovering, setDiscovering] = useState(false);
+  const [discovery, setDiscovery] = useState({cidr: '', count: 0, hosts: []});
+  const [chatForm, setChatForm] = useState({ device_type: 'cisco_ios', goal: '' });
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSuggestions, setChatSuggestions] = useState([]); // flat list of strings
 
   useEffect(() => {
     loadDashboardData();
@@ -79,6 +90,51 @@ function Dashboard() {
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChatSuggest = async () => {
+    const dt = (chatForm.device_type || '').trim();
+    const goal = (chatForm.goal || '').trim();
+    if (!dt) {
+      toast.error('Please enter a device type (e.g., cisco_ios, arista_eos, server_ssh)');
+      return;
+    }
+    if (!goal) {
+      toast.error('Please enter what you want to do (your goal).');
+      return;
+    }
+    try {
+      setChatLoading(true);
+      setChatSuggestions([]);
+      const res = await axios.post(`${API}/suggest-commands`, {
+        device_type: dt,
+        goal,
+      });
+      const groups = (res.data && res.data.groups) || {};
+      // Flatten to top ~20 commands for compact display
+      const flat = Object.values(groups).flat().filter(Boolean);
+      setChatSuggestions(flat.slice(0, 20));
+    } catch (e) {
+      console.error('Chat suggest failed', e);
+      toast.error('Failed to get suggestions');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleDiscover = async () => {
+    try {
+      setDiscovering(true);
+      setDiscovery({cidr: '', count: 0, hosts: []});
+      const res = await axios.get(`${API}/discover`, { params: { cidr } });
+      setDiscovery(res.data);
+      toast.success(`Found ${res.data.count} host(s) in ${cidr}`);
+    } catch (err) {
+      console.error('Discovery failed', err);
+      toast.error('Network discovery failed');
+    } finally {
+      setDiscovering(false);
     }
   };
 
@@ -155,6 +211,78 @@ function Dashboard() {
             <CardContent>
               <div className="text-2xl font-bold text-slate-900">{stats.totalDevices}</div>
               <p className="text-xs text-slate-600">Network devices managed</p>
+            </CardContent>
+          </Card>
+
+          {/* Command Helper (Chat-style) */}
+          <Card className="glass-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-emerald-600" />
+                    Command Helper
+                  </CardTitle>
+                  <CardDescription>Describe your task and get the most useful commands</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="md:col-span-1">
+                    <label className="block text-xs text-slate-600 mb-1">Device Type</label>
+                    <input
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      value={chatForm.device_type}
+                      onChange={(e) => setChatForm({ ...chatForm, device_type: e.target.value })}
+                      placeholder="cisco_ios | arista_eos | server_ssh"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs text-slate-600 mb-1">What do you want to do?</label>
+                    <input
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      value={chatForm.goal}
+                      onChange={(e) => setChatForm({ ...chatForm, goal: e.target.value })}
+                      placeholder="e.g., troubleshoot interface errors, check BGP neighbors, view VLANs"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleChatSuggest} disabled={chatLoading} className="bg-emerald-600 hover:bg-emerald-700">
+                    {chatLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Get Commands
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" /> Get Commands
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {chatSuggestions.length === 0 ? (
+                    <div className="text-center py-6 text-slate-500">
+                      <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Enter device type and your goal to get suggestions</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {chatSuggestions.map((cmd, idx) => (
+                        <div key={idx} className="p-2 bg-slate-50 rounded border border-slate-200 font-mono text-sm flex items-center justify-between">
+                          <span className="truncate pr-2">{cmd}</span>
+                          <Button size="sm" variant="outline" onClick={() => navigate('/devices')}>
+                            Use
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -254,6 +382,93 @@ function Dashboard() {
                       </div>
                     </div>
                   ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Network Discovery */}
+          <Card className="glass-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-indigo-600" />
+                    Discover Network
+                  </CardTitle>
+                  <CardDescription>Scan your LAN to find reachable hosts</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={cidr}
+                    onChange={(e) => setCidr(e.target.value)}
+                    placeholder="192.168.1.0/24"
+                  />
+                  <Button onClick={handleDiscover} disabled={discovering} className="bg-indigo-600 hover:bg-indigo-700">
+                    {discovering ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scanning
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" /> Discover
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {discovery.hosts.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Enter a CIDR and click Discover to scan your network</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-80 overflow-auto pr-1">
+                    {discovery.hosts.map((h) => (
+                      <div key={h.ip} className="p-3 bg-white rounded-lg border border-slate-200">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <div className="font-mono text-sm text-slate-900">{h.ip}</div>
+                            {h.hostname && (
+                              <div className="text-xs text-slate-600 truncate">{h.hostname}</div>
+                            )}
+                            {h.mac && (
+                              <div className="text-xs text-slate-500">MAC: {h.mac}</div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {h.is_ssh ? (
+                              <Badge className="bg-green-100 text-green-800">SSH</Badge>
+                            ) : (
+                              <Badge variant="outline">No SSH</Badge>
+                            )}
+                            {h.open_ports && h.open_ports.length > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                ports: {h.open_ports.join(',')}
+                              </Badge>
+                            )}
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => navigate('/devices')}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                        {h.banner && (
+                          <div className="mt-2 text-xs font-mono bg-slate-50 rounded p-2 border border-slate-200">
+                            {h.banner}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </CardContent>

@@ -14,7 +14,9 @@ class CLIExecutor:
             "arista_eos": "arista_eos",
             "cisco_ios": "cisco_ios",
             "cisco_xe": "cisco_xe",
-            "cisco_nxos": "cisco_nxos"
+            "cisco_nxos": "cisco_nxos",
+            # Generic Linux server (VPS) over SSH
+            "server_ssh": "linux"
         }
     
     async def test_connection(
@@ -53,7 +55,12 @@ class CLIExecutor:
         try:
             with ConnectHandler(**device_params) as connection:
                 # Test basic connectivity with a simple command
-                output = connection.send_command("show version", read_timeout=30)
+                # Use an appropriate test command based on device type
+                test_cmd = "show version"
+                if device_params.get('device_type') == 'linux':
+                    # For generic servers, use a POSIX-friendly command
+                    test_cmd = "uname -a"
+                output = connection.send_command(test_cmd, read_timeout=30)
                 
                 return {
                     "status": "success",
@@ -103,6 +110,42 @@ class CLIExecutor:
         except Exception as e:
             logger.error(f"Command execution failed for {device_ip}: {str(e)}")
             raise
+
+    async def execute_single_command(
+        self,
+        device_params: Dict,
+        command: str,
+        connection: Optional[ConnectHandler] = None,
+    ) -> str:
+        """Execute a single command using an existing connection if provided."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._execute_single_command_sync, device_params, command, connection)
+
+    def _execute_single_command_sync(
+        self,
+        device_params: Dict,
+        command: str,
+        connection: Optional[ConnectHandler] = None,
+    ) -> str:
+        close_conn = False
+        try:
+            conn = connection
+            if conn is None:
+                conn = ConnectHandler(**device_params)
+                close_conn = True
+                if 'secret' in device_params:
+                    conn.enable()
+            if command.startswith("show"):
+                output = conn.send_command(command, read_timeout=60)
+            else:
+                output = conn.send_command(command, read_timeout=60)
+            return output
+        finally:
+            if close_conn and 'conn' in locals() and conn is not None:
+                try:
+                    conn.disconnect()
+                except Exception:
+                    pass
     
     def _execute_commands_sync(self, device_params: Dict, commands: List[str]) -> Dict[str, str]:
         """Synchronous command execution"""

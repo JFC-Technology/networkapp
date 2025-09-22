@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { 
-  Network, 
+  Server, 
   Plus, 
-  Edit3, 
+  Edit, 
   Trash2, 
+  Play, 
+  FileText, 
+  Terminal,
+  Network, 
+  Edit3, 
   TestTube, 
   ArrowLeft,
   CheckCircle2,
@@ -20,6 +17,14 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Badge } from './ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import axios from 'axios';
 import { API } from '../App';
 import { toast } from 'sonner';
@@ -136,6 +141,8 @@ function DeviceManager() {
         return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       case 'cisco_nxos':
         return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'server_ssh':
+        return 'bg-green-100 text-green-800 border-green-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -193,7 +200,7 @@ function DeviceManager() {
                       id="name"
                       value={newDevice.name}
                       onChange={(e) => setNewDevice({...newDevice, name: e.target.value})}
-                      placeholder="Switch-01"
+                      placeholder="Host-01 or Switch-01"
                       required
                     />
                   </div>
@@ -223,6 +230,7 @@ function DeviceManager() {
                       <SelectItem value="cisco_ios">Cisco IOS</SelectItem>
                       <SelectItem value="cisco_xe">Cisco IOS-XE</SelectItem>
                       <SelectItem value="cisco_nxos">Cisco NX-OS</SelectItem>
+                      <SelectItem value="server_ssh">Server (SSH)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -251,16 +259,18 @@ function DeviceManager() {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="enable_password">Enable Password (Optional)</Label>
-                  <Input
-                    id="enable_password"
-                    type="password"
-                    value={newDevice.enable_password}
-                    onChange={(e) => setNewDevice({...newDevice, enable_password: e.target.value})}
-                    placeholder="••••••••"
-                  />
-                </div>
+                {newDevice.device_type !== 'server_ssh' && (
+                  <div>
+                    <Label htmlFor="enable_password">Enable Password (Optional)</Label>
+                    <Input
+                      id="enable_password"
+                      type="password"
+                      value={newDevice.enable_password}
+                      onChange={(e) => setNewDevice({...newDevice, enable_password: e.target.value})}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button 
@@ -360,6 +370,18 @@ function DeviceManager() {
                       >
                         Execute
                       </Button>
+                      
+                      {device.device_type === 'server_ssh' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/terminal/${device.id}`)}
+                          className="flex-1 border-green-600 text-green-600 hover:bg-green-50"
+                        >
+                          <Terminal className="w-3 h-3 mr-1" />
+                          Terminal
+                        </Button>
+                      )}
                       
                       <Button
                         variant="outline"

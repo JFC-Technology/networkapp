@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import DeviceManager from './components/DeviceManager';
 import CommandExecutor from './components/CommandExecutor';
 import DocumentationViewer from './components/DocumentationViewer';
+import TerminalView from './components/TerminalView';
 import { Toaster } from './components/ui/sonner';
 
 const BACKEND_URL = process.env.REACT_APP_API_BASE_URL;
@@ -20,6 +21,7 @@ function App() {
             <Route path="/devices" element={<DeviceManager />} />
             <Route path="/execute/:deviceId" element={<CommandExecutor />} />
             <Route path="/documentation" element={<DocumentationViewer />} />
+            <Route path="/terminal/:deviceId" element={<TerminalView />} />
           </Routes>
           <Toaster />
         </div>
